@@ -172,7 +172,12 @@ def translate_url(url, lang_code):
         to_be_reversed = "%s:%s" % (match.namespace, match.url_name) if match.namespace else match.url_name
         with override(lang_code):
             try:
-                url = reverse(to_be_reversed, args=match.args, kwargs=match.kwargs)
+                # Filter out unmatched optional named groups (they appear as None
+                # in match.kwargs). Passing None values to reverse() would result
+                # in the string 'None' being inserted into the URL.
+                kwargs = {k: v for k, v in match.kwargs.items()} if match.kwargs else {}
+                filtered_kwargs = {k: v for k, v in kwargs.items() if v is not None}
+                url = reverse(to_be_reversed, args=match.args, kwargs=filtered_kwargs)
             except NoReverseMatch:
                 pass
             else:
